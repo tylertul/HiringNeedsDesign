@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Music School Reporting Tool</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<style type="text/tailwindcss">
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .table-header th {
+      @apply py-4 px-4 text-sm font-semibold tracking-wider uppercase border-r border-slate-300 last:border-r-0;
+    }
+    .instrument-piano-header {
+      @apply bg-red-600 text-white;
+    }
+    .instrument-guitar-header {
+      @apply bg-green-600 text-white cursor-pointer;
+    }
+    .instrument-guitar-header.selected {
+      @apply bg-green-800 shadow-inner underline underline-offset-4 decoration-2 decoration-white/70;
+    }
+    .instrument-voice-header {
+      @apply bg-slate-700 text-slate-100;
+    }
+    .instrument-drums-header {
+      @apply bg-slate-700 text-slate-100;
+    }
+    .instrument-violin-header {
+      @apply bg-slate-700 text-slate-100;
+    }
+    .instrument-default-header {
+      @apply bg-slate-200 text-slate-700;
+    }
+    .status-cell .tooltip {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .status-cell:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+    .table-cell-bordered {
+        @apply border-r border-slate-200;
+    }
+  </style>
+</head>
+<body class="flex min-h-screen bg-slate-50">
+<aside class="w-72 bg-slate-900 text-white flex flex-col">
+<div class="p-6 text-2xl font-semibold border-b border-slate-700">
+      Music School Admin
+    </div>
+<nav class="flex-grow">
+<ul class="space-y-1 py-4">
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">home</span>
+            Everett
+            <span class="inline-block w-2.5 h-2.5 bg-red-500 rounded-full ml-auto"></span>
+</a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Mill Creek
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Lynnwood
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Bothell
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Kirkland
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Redmond
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 bg-slate-700 text-white border-l-4 border-red-500 transition-colors duration-200" href="#" id="bellevue-link">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Bellevue
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-green-400 font-medium hover:bg-slate-700 hover:text-green-300 transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Newcastle
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Beaverton
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            McKinney
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Plano
+          </a>
+</li>
+<li>
+<a class="flex items-center py-3 px-6 text-green-400 font-medium hover:bg-slate-700 hover:text-green-300 transition-colors duration-200" href="#">
+<span class="material-icons align-middle mr-3">location_city</span>
+            Little Elm
+          </a>
+</li>
+</ul>
+</nav>
+<div class="p-4 border-t border-slate-700 text-sm text-slate-400">
+      Logged in as: Admin
+    </div>
+</aside>
+<main class="flex-grow p-8">
+<header class="mb-8">
+<h1 class="text-3xl font-semibold text-slate-800" id="main-header">Bellevue</h1>
+<p class="text-slate-600">Teachers Needed</p>
+</header>
+
+
+<div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+  
+  <!-- This div now controls the overall shape and border of the table -->
+  <div class="overflow-x-auto rounded-md border-b border-r border-slate-200">
+    <!-- The "table-fixed" class ensures equal column widths -->
+    <table class="w-full table-fixed">
+      <thead class="table-header">
+        <tr>
+          <th class="text-left instrument-default-header border-b border-slate-200"></th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Mon</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Tue</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Wed</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Thu</th>
+          <th class="text-center instrument-default-header border-b border-slate-200 border-l-4 border-slate-300">Fri</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Sat</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Sun</th>
+        </tr>
+      </thead>
+      <tbody class="text-slate-700">
+        <!-- Piano Row -->
+        <tr>
+          <td class="py-3 px-4 border-b border-slate-200 table-cell-bordered instrument-piano-header text-center">Piano</td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">1
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Needs Teacher</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">
+            2
+            <span class="cursor-pointer relative inline-block ml-1">👩‍🏫
+              <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Susie Jones - Voice, Piano | Starting 4/2/2025</div>
+            </span>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered border-l-4 border-slate-300"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center"></td>
+        </tr>
+        <!-- Voice Row -->
+        <tr>
+          <td class="py-3 px-4 border-b border-slate-200 table-cell-bordered instrument-voice-header text-center">Voice</td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">
+            2
+            <span class="cursor-pointer relative inline-block ml-1">🛑
+              <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Steve Jones - Piano, Voice | Last day: 6-12-2025</div>
+            </span>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">3
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Mr. Davis (Arriving 3 PM)</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered border-l-4 border-slate-300">6
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Ms. Wilson (Arriving 11 AM)</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center"></td>
+        </tr>
+        <!-- Guitar Row -->
+        <tr>
+          <td class="py-3 px-4 border-b border-slate-200 table-cell-bordered instrument-guitar-header text-center" id="guitar-header">Guitar</td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">1
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Needs Teacher</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">5
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Ms. Jones (Available 9 AM - 1 PM)</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered border-l-4 border-slate-300"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">8
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Needs Teacher</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center"></td>
+        </tr>
+        <!-- Drums Row -->
+        <tr>
+          <td class="py-3 px-4 border-b border-slate-200 table-cell-bordered instrument-drums-header text-center">Drums</td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center status-cell relative table-cell-bordered">2
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Mr. Brown (Available All Day)</div>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered status-cell relative border-l-4 border-slate-300">
+            4
+            <span class="cursor-pointer relative inline-block ml-1">👩‍🏫
+              <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Jason Smith - Drums, Piano | Starting 4/17/2025</div>
+            </span>
+          </td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b border-slate-200 text-center"></td>
+        </tr>
+        <!-- Violin Row with a thicker bottom border -->
+        <tr>
+          <td class="py-3 px-4 border-b-2 border-slate-200 table-cell-bordered instrument-violin-header text-center">Violin</td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center status-cell relative table-cell-bordered">2
+            <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Ms. Perry (Arriving 2 PM)</div>
+          </td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center table-cell-bordered">5</td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center table-cell-bordered status-cell relative">
+            6
+            <span class="cursor-pointer relative inline-block ml-1">🛑
+              <div class="tooltip absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs bg-slate-800 text-white text-xs rounded py-1 px-2 text-center">Dawn Stevens - Drums, Piano | Last day: 8-1-2025</div>
+            </span>
+          </td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center table-cell-bordered border-l-4 border-slate-300"></td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center table-cell-bordered"></td>
+          <td class="py-3 px-4 border-b-2 border-slate-200 text-center"></td>
+        </tr>
+        <!-- Studios Row (Last Row) -->
+        <tr>
+          <td class="py-3 px-4 table-cell-bordered bg-slate-100 font-semibold text-center">Studios</td>
+          <td class="py-3 px-4 text-center table-cell-bordered bg-slate-100">1</td>
+          <td class="py-3 px-4 text-center table-cell-bordered bg-slate-100">3 + 🥁</td>
+          <td class="py-3 px-4 text-center table-cell-bordered bg-slate-100"></td>
+          <td class="py-3 px-4 text-center table-cell-bordered bg-slate-100"></td>
+          <td class="py-3 px-4 text-center table-cell-bordered bg-slate-100 border-l-4 border-slate-300">4 + 🥁 🎹</td>
+          <td class="py-3 px-4 text-center table-cell-bordered bg-slate-100"></td>
+          <td class="py-3 px-4 text-center bg-slate-100 font-semibold"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Instrument Chosen Header -->
+<header class="mb-8">
+<h1 class="text-3xl font-semibold text-slate-800" id="main-header">Guitar</h1>
+</header>
+
+
+<div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+  <h2 class="text-xl font-semibold text-slate-700 mb-6">Waiting List</h2>
+
+  <!-- This div now controls the overall shape and border of the table -->
+  <div class="overflow-x-auto rounded-md border border-slate-200">
+    <!-- The "table-fixed" class ensures equal column widths -->
+    <table class="w-full table-fixed">
+      <thead class="table-header">
+        <tr>
+          <th class="text-center instrument-default-header border-b border-slate-200">Total</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Mon</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Tue</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Wed</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Thu</th>
+          <th class="text-center instrument-default-header border-b border-slate-200 border-l-4 border-slate-300">Fri</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Sat</th>
+          <th class="text-center instrument-default-header border-b border-slate-200">Sun</th>
+        </tr>
+      </thead>
+      <tbody class="text-slate-700">
+        <!-- Waitlist Data Row -->
+        <tr>
+          <td class="py-3 px-4 text-center table-cell-bordered font-bold">8</td>
+          <td class="py-3 px-4 text-center table-cell-bordered">5</td>
+          <td class="py-3 px-4 text-center table-cell-bordered">6</td>
+          <td class="py-3 px-4 text-center table-cell-bordered">3</td>
+          <td class="py-3 px-4 text-center table-cell-bordered">2</td>
+          <td class="py-3 px-4 text-center table-cell-bordered border-l-4 border-slate-300">4</td>
+          <td class="py-3 px-4 text-center table-cell-bordered">1</td>
+          <td class="py-3 px-4 text-center">0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="bg-white rounded-lg shadow-lg p-6">
+<h2 class="text-xl font-semibold text-slate-700 mb-4">Hiring Meeting Minutes</h2>
+<ul class="space-y-3 text-slate-700 text-sm list-disc list-inside">
+<li><span class="font-medium">2025-06-03:</span> Discussed need for more Guitar teachers.</li>
+<li><span class="font-medium">2025-05-22:</span> Budget approved for part-time hire for Piano.</li>
+</ul>
+</div>
+</main>
+<script>
+    const guitarHeader = document.getElementById('guitar-header');
+    const bellevueLink = document.getElementById('bellevue-link');
+    const mainHeader = document.getElementById('main-header');
+    const dynamicDataSection = document.getElementById('dynamic-data-section');
+    const waitlistTitle = document.getElementById('waitlist-title');
+    const waitlistCount = document.getElementById('waitlist-count');
+    const waitlistDetails = document.getElementById('waitlist-details');
+    const teachersTitle = document.getElementById('teachers-title');
+    const teachersList = document.getElementById('teachers-list');
+    let guitarSelected = false;
+    let bellevueSelected = bellevueLink.classList.contains('bg-slate-700'); // Check initial state
+    const originalWaitlistTitle = waitlistTitle.textContent;
+    const originalWaitlistCount = waitlistCount.textContent;
+    const originalWaitlistDetailsHTML = waitlistDetails.innerHTML;
+    const originalTeachersTitle = teachersTitle.textContent;
+    const originalTeachersListHTML = teachersList.innerHTML;
+    function updateDynamicData() {
+      if (guitarSelected && bellevueSelected) {
+        waitlistTitle.textContent = 'Waiting List Quantity - Guitar, Bellevue';
+        waitlistCount.textContent = '3';
+        waitlistDetails.innerHTML = `
+          <tr>
+            <td class="py-2 px-3 border-b border-slate-200 font-bold">3</td>
+            <td class="py-2 px-3 border-b border-slate-200">0</td>
+            <td class="py-2 px-3 border-b border-slate-200">1</td>
+            <td class="py-2 px-3 border-b border-slate-200">2</td>
+          </tr>
+        `;
+        teachersTitle.textContent = 'Available Guitar Teachers - Bellevue';
+        teachersList.innerHTML = `
+          <li class="flex items-center">
+            <span class="material-icons text-green-500 mr-2">check_circle</span> Ms. Jones
+          </li>
+          <li class="flex items-center">
+            <span class="material-icons text-orange-500 mr-2">watch_later</span> Mr. Davis (Part-time, Wed only)
+          </li>
+        `;
+      } else {
+        waitlistTitle.textContent = originalWaitlistTitle;
+        waitlistCount.textContent = originalWaitlistCount;
+        waitlistDetails.innerHTML = originalWaitlistDetailsHTML;
+        teachersTitle.textContent = originalTeachersTitle;
+        teachersList.innerHTML = originalTeachersListHTML;
+      }
+    }
+    guitarHeader.addEventListener('click', () => {
+      guitarSelected = !guitarSelected;
+      guitarHeader.classList.toggle('selected', guitarSelected);
+      updateDynamicData();
+    });
+    // Simulate Bellevue selection for dynamic data (in a real app, this would be part of navigation logic)
+    // For this example, we'll just assume Bellevue is always selected when its link has the active classes.
+    // A more robust solution would involve observing changes to the Bellevue link's classes or having a dedicated state management.
+    const observer = new MutationObserver((mutationsList) => {
+        for(const mutation of mutationsList) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                bellevueSelected = bellevueLink.classList.contains('bg-slate-700');
+                updateDynamicData();
+            }
+        }
+    });
+    observer.observe(bellevueLink, { attributes: true });
+    // Initial check
+    updateDynamicData();
+  </script>
+</body></html>
