@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>DinnerFlow - Weekly Meal Planner</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <style type="text/tailwindcss">
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .meal-card {
+      @apply bg-white rounded-lg border border-slate-200 p-3 cursor-grab shadow-sm hover:shadow-md transition-shadow duration-200;
+    }
+    .meal-card:active {
+      @apply cursor-grabbing shadow-lg;
+    }
+    .day-column {
+      @apply bg-slate-50 rounded-lg p-3 min-h-[200px] border-2 border-dashed border-transparent transition-colors duration-200;
+    }
+    .day-column.drag-over {
+      @apply border-amber-400 bg-amber-50;
+    }
+    .category-badge {
+      @apply text-xs font-medium px-2 py-0.5 rounded-full;
+    }
+    .nav-item {
+      @apply flex items-center py-3 px-6 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 cursor-pointer;
+    }
+    .nav-item.active {
+      @apply bg-slate-700 text-amber-400 border-l-4 border-amber-400;
+    }
+  </style>
+</head>
+<body class="flex min-h-screen bg-slate-100">
+
+<!-- Sidebar -->
+<aside class="w-72 bg-slate-900 text-white flex flex-col flex-shrink-0">
+  <div class="p-6 border-b border-slate-700 flex items-center gap-3">
+    <span class="material-icons text-amber-400 text-3xl">restaurant</span>
+    <span class="text-2xl font-semibold">DinnerFlow</span>
+  </div>
+  <nav class="flex-grow">
+    <ul class="space-y-1 py-4">
+      <li>
+        <a class="nav-item active" href="#" id="nav-planner">
+          <span class="material-icons mr-3 text-xl">calendar_today</span>
+          Meal Planner
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" href="#" id="nav-recipes">
+          <span class="material-icons mr-3 text-xl">menu_book</span>
+          Recipe Library
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" href="#" id="nav-grocery">
+          <span class="material-icons mr-3 text-xl">shopping_cart</span>
+          Grocery List
+        </a>
+      </li>
+      <li>
+        <a class="nav-item" href="#" id="nav-favorites">
+          <span class="material-icons mr-3 text-xl">favorite</span>
+          Favorites
+        </a>
+      </li>
+    </ul>
+    <div class="border-t border-slate-700 mt-4 pt-4 px-6">
+      <p class="text-xs text-slate-500 uppercase tracking-wider mb-3">Meal Categories</p>
+      <ul class="space-y-2">
+        <li class="flex items-center text-sm text-slate-300">
+          <span class="w-3 h-3 rounded-full bg-green-400 mr-3"></span> Vegetarian
+        </li>
+        <li class="flex items-center text-sm text-slate-300">
+          <span class="w-3 h-3 rounded-full bg-red-400 mr-3"></span> Meat
+        </li>
+        <li class="flex items-center text-sm text-slate-300">
+          <span class="w-3 h-3 rounded-full bg-blue-400 mr-3"></span> Seafood
+        </li>
+        <li class="flex items-center text-sm text-slate-300">
+          <span class="w-3 h-3 rounded-full bg-amber-400 mr-3"></span> Pasta
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="p-4 border-t border-slate-700 text-xs text-slate-500 text-center">
+    DinnerFlow v1.0
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="flex-grow p-8 overflow-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-800">Weekly Meal Planner</h1>
+      <p class="text-slate-500 mt-1" id="week-label">March 22 - March 28, 2026</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="p-2 rounded-lg bg-white shadow hover:bg-slate-50 transition" id="prev-week">
+        <span class="material-icons text-slate-600">chevron_left</span>
+      </button>
+      <button class="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 transition shadow" id="today-btn">
+        This Week
+      </button>
+      <button class="p-2 rounded-lg bg-white shadow hover:bg-slate-50 transition" id="next-week">
+        <span class="material-icons text-slate-600">chevron_right</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Weekly Planner Grid -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <div class="grid grid-cols-7 gap-4" id="planner-grid">
+      <!-- Monday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Mon</h3>
+        <div class="day-column" data-day="monday" id="col-monday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="1">
+            <span class="category-badge bg-red-100 text-red-700">Meat</span>
+            <p class="font-medium text-sm mt-1.5">Grilled Chicken</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 35 min
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Tuesday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Tue</h3>
+        <div class="day-column" data-day="tuesday" id="col-tuesday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="2">
+            <span class="category-badge bg-amber-100 text-amber-700">Pasta</span>
+            <p class="font-medium text-sm mt-1.5">Spaghetti Bolognese</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 45 min
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Wednesday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Wed</h3>
+        <div class="day-column" data-day="wednesday" id="col-wednesday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="3">
+            <span class="category-badge bg-green-100 text-green-700">Vegetarian</span>
+            <p class="font-medium text-sm mt-1.5">Veggie Stir Fry</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 25 min
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Thursday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Thu</h3>
+        <div class="day-column" data-day="thursday" id="col-thursday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="4">
+            <span class="category-badge bg-blue-100 text-blue-700">Seafood</span>
+            <p class="font-medium text-sm mt-1.5">Salmon Teriyaki</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 30 min
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Friday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Fri</h3>
+        <div class="day-column" data-day="friday" id="col-friday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="5">
+            <span class="category-badge bg-amber-100 text-amber-700">Pasta</span>
+            <p class="font-medium text-sm mt-1.5">Mac & Cheese</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 40 min
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Saturday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Sat</h3>
+        <div class="day-column" data-day="saturday" id="col-saturday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="6">
+            <span class="category-badge bg-red-100 text-red-700">Meat</span>
+            <p class="font-medium text-sm mt-1.5">BBQ Ribs</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 2 hrs
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Sunday -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-600 mb-2 text-center uppercase tracking-wider">Sun</h3>
+        <div class="day-column" data-day="sunday" id="col-sunday">
+          <div class="meal-card mb-2" draggable="true" data-meal-id="7">
+            <span class="category-badge bg-green-100 text-green-700">Vegetarian</span>
+            <p class="font-medium text-sm mt-1.5">Mushroom Risotto</p>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="material-icons text-xs align-middle">schedule</span> 50 min
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-3 gap-6 mb-8">
+    <!-- Grocery Summary -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-slate-700">Grocery Summary</h2>
+        <span class="material-icons text-amber-500">shopping_basket</span>
+      </div>
+      <div class="space-y-2 text-sm text-slate-600">
+        <div class="flex justify-between">
+          <span>Proteins</span>
+          <span class="font-medium">5 items</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Vegetables</span>
+          <span class="font-medium">12 items</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Pantry Staples</span>
+          <span class="font-medium">8 items</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Dairy</span>
+          <span class="font-medium">4 items</span>
+        </div>
+        <div class="border-t border-slate-200 pt-2 mt-2 flex justify-between font-semibold text-slate-800">
+          <span>Total Items</span>
+          <span>29</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Stats -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-slate-700">Weekly Stats</h2>
+        <span class="material-icons text-amber-500">bar_chart</span>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div>
+          <div class="flex justify-between text-slate-600 mb-1">
+            <span>Meals Planned</span>
+            <span class="font-medium">7/7</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-slate-600 mb-1">
+            <span>Avg Prep Time</span>
+            <span class="font-medium">42 min</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-amber-500 h-2 rounded-full" style="width: 58%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-slate-600 mb-1">
+            <span>Variety Score</span>
+            <span class="font-medium">4/4 categories</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-blue-500 h-2 rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Add -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-slate-700">Quick Add Meal</h2>
+        <span class="material-icons text-amber-500">add_circle</span>
+      </div>
+      <form id="quick-add-form" class="space-y-3">
+        <input type="text" placeholder="Meal name" class="w-full rounded-lg border-slate-300 text-sm focus:ring-amber-500 focus:border-amber-500" id="meal-name-input"/>
+        <select class="w-full rounded-lg border-slate-300 text-sm focus:ring-amber-500 focus:border-amber-500" id="meal-category-select">
+          <option value="meat">Meat</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="seafood">Seafood</option>
+          <option value="pasta">Pasta</option>
+        </select>
+        <input type="text" placeholder="Prep time (e.g. 30 min)" class="w-full rounded-lg border-slate-300 text-sm focus:ring-amber-500 focus:border-amber-500" id="meal-time-input"/>
+        <button type="submit" class="w-full py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition text-sm">
+          Add to Library
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Recipe Library Preview -->
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-semibold text-slate-700">Recipe Library</h2>
+      <button class="text-amber-600 text-sm font-medium hover:text-amber-700 transition">View All</button>
+    </div>
+    <div class="grid grid-cols-4 gap-4">
+      <div class="border border-slate-200 rounded-lg p-4 hover:border-amber-400 hover:shadow transition cursor-pointer">
+        <span class="category-badge bg-red-100 text-red-700">Meat</span>
+        <h3 class="font-medium text-slate-800 mt-2">Herb Roasted Chicken</h3>
+        <p class="text-xs text-slate-500 mt-1">Whole roasted chicken with herbs and vegetables</p>
+        <div class="flex items-center justify-between mt-3 text-xs text-slate-400">
+          <span><span class="material-icons text-xs align-middle">schedule</span> 1.5 hrs</span>
+          <span><span class="material-icons text-xs align-middle">people</span> Serves 4</span>
+        </div>
+      </div>
+      <div class="border border-slate-200 rounded-lg p-4 hover:border-amber-400 hover:shadow transition cursor-pointer">
+        <span class="category-badge bg-green-100 text-green-700">Vegetarian</span>
+        <h3 class="font-medium text-slate-800 mt-2">Thai Green Curry</h3>
+        <p class="text-xs text-slate-500 mt-1">Coconut curry with tofu and mixed vegetables</p>
+        <div class="flex items-center justify-between mt-3 text-xs text-slate-400">
+          <span><span class="material-icons text-xs align-middle">schedule</span> 35 min</span>
+          <span><span class="material-icons text-xs align-middle">people</span> Serves 3</span>
+        </div>
+      </div>
+      <div class="border border-slate-200 rounded-lg p-4 hover:border-amber-400 hover:shadow transition cursor-pointer">
+        <span class="category-badge bg-blue-100 text-blue-700">Seafood</span>
+        <h3 class="font-medium text-slate-800 mt-2">Garlic Butter Shrimp</h3>
+        <p class="text-xs text-slate-500 mt-1">Pan-seared shrimp in garlic butter sauce</p>
+        <div class="flex items-center justify-between mt-3 text-xs text-slate-400">
+          <span><span class="material-icons text-xs align-middle">schedule</span> 20 min</span>
+          <span><span class="material-icons text-xs align-middle">people</span> Serves 2</span>
+        </div>
+      </div>
+      <div class="border border-slate-200 rounded-lg p-4 hover:border-amber-400 hover:shadow transition cursor-pointer">
+        <span class="category-badge bg-amber-100 text-amber-700">Pasta</span>
+        <h3 class="font-medium text-slate-800 mt-2">Carbonara</h3>
+        <p class="text-xs text-slate-500 mt-1">Classic Italian pasta with egg and pancetta</p>
+        <div class="flex items-center justify-between mt-3 text-xs text-slate-400">
+          <span><span class="material-icons text-xs align-middle">schedule</span> 25 min</span>
+          <span><span class="material-icons text-xs align-middle">people</span> Serves 2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // Drag and drop functionality
+  const dayColumns = document.querySelectorAll('.day-column');
+
+  dayColumns.forEach(column => {
+    column.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      column.classList.add('drag-over');
+    });
+
+    column.addEventListener('dragleave', () => {
+      column.classList.remove('drag-over');
+    });
+
+    column.addEventListener('drop', (e) => {
+      e.preventDefault();
+      column.classList.remove('drag-over');
+      const mealId = e.dataTransfer.getData('text/plain');
+      const mealCard = document.querySelector(`[data-meal-id="${mealId}"]`);
+      if (mealCard) {
+        column.appendChild(mealCard);
+      }
+    });
+  });
+
+  document.querySelectorAll('.meal-card').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', card.dataset.mealId);
+      card.style.opacity = '0.5';
+    });
+
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '1';
+    });
+  });
+
+  // Quick add form
+  document.getElementById('quick-add-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('meal-name-input').value.trim();
+    const category = document.getElementById('meal-category-select').value;
+    const time = document.getElementById('meal-time-input').value.trim();
+
+    if (!name) return;
+
+    const categoryColors = {
+      meat: { bg: 'bg-red-100', text: 'text-red-700', label: 'Meat' },
+      vegetarian: { bg: 'bg-green-100', text: 'text-green-700', label: 'Vegetarian' },
+      seafood: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Seafood' },
+      pasta: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Pasta' }
+    };
+
+    const cat = categoryColors[category];
+    const mealId = Date.now();
+
+    const card = document.createElement('div');
+    card.className = 'meal-card mb-2';
+    card.draggable = true;
+    card.dataset.mealId = mealId;
+    card.innerHTML = `
+      <span class="category-badge ${cat.bg} ${cat.text}">${cat.label}</span>
+      <p class="font-medium text-sm mt-1.5">${name}</p>
+      ${time ? `<p class="text-xs text-slate-400 mt-1"><span class="material-icons text-xs align-middle">schedule</span> ${time}</p>` : ''}
+    `;
+
+    card.addEventListener('dragstart', (ev) => {
+      ev.dataTransfer.setData('text/plain', card.dataset.mealId);
+      card.style.opacity = '0.5';
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '1';
+    });
+
+    // Add to first empty day or Monday
+    const monday = document.getElementById('col-monday');
+    monday.appendChild(card);
+
+    // Reset form
+    document.getElementById('meal-name-input').value = '';
+    document.getElementById('meal-time-input').value = '';
+  });
+
+  // Navigation
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
