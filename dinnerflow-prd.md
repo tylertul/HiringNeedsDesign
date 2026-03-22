@@ -1,7 +1,7 @@
 # DinnerFlow — Product Requirements Document
 
 **Author:** Tyler
-**Version:** v1.1 (refined)
+**Version:** v1.2 (Supabase stack)
 **Last Updated:** 2026-03-22
 **Status:** Draft — ready for review
 
@@ -69,17 +69,25 @@ Modern web app, PWA-ready (installable, but **online-first** for MVP — no offl
 |-------|--------|-----------|
 | Frontend | React + Next.js | Component model, SSR for fast load |
 | Drag & Drop | `@dnd-kit/core` | Best touch + pointer support, accessible, lightweight |
-| Hosting | Vercel | Zero-config Next.js deploys |
-| Database | Firebase Firestore | Realtime sync, low ops burden |
-| Auth | Firebase Auth (email/password) | Simple, integrated |
-| Realtime sync | Firestore `onSnapshot` listeners | Both users see changes instantly |
-| Email | Firebase Extensions (Trigger Email) + SendGrid | `firestore-send-email` extension watches a `mail` collection |
+| Hosting | Vercel | Zero-config Next.js deploys, native Supabase marketplace integration |
+| Database | Supabase (Postgres) | Relational model fits meal/day/household data naturally; SQL joins avoid client-side denormalization |
+| Auth | Supabase Auth (email/password) | Integrated with database, user data lives in Postgres |
+| Realtime sync | Supabase Realtime (Broadcast) | ~6ms median latency; both users see drag-drop changes instantly |
+| Scheduled emails | Supabase `pg_cron` + Edge Function + Resend | Single-platform cron — no external scheduler needed |
+
+### Why Supabase over Firebase
+
+- **Relational data model.** Meals, days, households, and history have natural relationships — SQL with foreign keys and joins is cleaner than NoSQL document collections requiring client-side joins and denormalization.
+- **Single platform.** Auth, database, realtime, cron, and edge functions all in one service. Firebase would require orchestrating Cloud Scheduler + Cloud Functions + Extensions separately.
+- **Vercel-native.** Supabase is in the Vercel Marketplace with automatic env var syncing and database branching (preview deploys get preview databases).
+- **No vendor lock-in.** Standard Postgres — data is exportable via `pg_dump` at any time. Self-hosting is available if needed.
+- **Cost predictable.** Fixed monthly pricing vs. pay-per-operation spikes.
 
 ### Offline Strategy (MVP)
 
 - **Online-first.** The app requires a network connection to function.
-- Firestore's built-in offline persistence provides brief connectivity gap tolerance (e.g., switching Wi-Fi networks), but the app will not advertise or design for offline use in MVP.
-- **Future:** Full offline support with conflict resolution via Firestore offline persistence + sync queue.
+- Supabase Realtime connections auto-reconnect after brief connectivity gaps (e.g., switching Wi-Fi networks), but the app will not advertise or design for offline use in MVP.
+- **Future:** Full offline support with local-first sync (e.g., PowerSync or ElectricSQL with Supabase Postgres).
 
 ---
 
@@ -284,10 +292,10 @@ When dropping onto a day that already has meal(s):
 
 **Tech approach:**
 
-1. A Firestore Cloud Function runs on a daily schedule (Cloud Scheduler).
-2. It reads today's meal plan for each household.
-3. It writes a document to the `mail` collection (used by the `firestore-send-email` Firebase Extension).
-4. SendGrid delivers the email.
+1. A `pg_cron` job runs daily at the configured time (per-timezone scheduling via stored user preferences).
+2. It invokes a Supabase Edge Function via HTTP.
+3. The Edge Function queries today's meal plan for each household with reminders enabled.
+4. It sends emails via Resend (or SendGrid) API.
 
 **Configuration:**
 
@@ -305,60 +313,94 @@ When dropping onto a day that already has meal(s):
 
 ## 5. Data Model
 
-### Firestore Collections
+### Postgres Schema (Supabase)
 
-```
-/users/{userId}
-  - email: string
-  - householdId: string
-  - emailReminders: boolean (default: true)
+```sql
+-- Managed by Supabase Auth (auto-created on signup)
+-- auth.users: id, email, etc.
 
-/households/{householdId}
-  - name: string
-  - weekStartDay: "monday" | "sunday" (default: "monday")
-  - memberIds: string[]
+create table households (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  week_start  text not null default 'monday'  -- 'monday' | 'sunday'
+);
 
-/households/{householdId}/mealLibrary/{mealId}
-  - name: string
-  - type: "main" | "side" | "dessert"
-  - createdAt: Timestamp
-  - createdBy: string (userId)
+create table user_profiles (
+  id              uuid primary key references auth.users(id),
+  household_id    uuid not null references households(id),
+  email_reminders boolean not null default true,
+  timezone        text not null default 'America/Los_Angeles'
+);
 
-/households/{householdId}/plannedDays/{dateString}   // e.g., "2026-03-22"
-  - date: Timestamp
-  - meals: [
-      {
-        id: string,
-        mainId: string | null,
-        mainName: string | null,
-        sideIds: string[],
-        sideNames: string[],
-        dessertIds: string[],
-        dessertNames: string[]
-      }
-    ]
+create table meal_library (
+  id            uuid primary key default gen_random_uuid(),
+  household_id  uuid not null references households(id),
+  name          text not null,
+  type          text not null check (type in ('main', 'side', 'dessert')),
+  created_at    timestamptz not null default now(),
+  created_by    uuid references auth.users(id)
+);
 
-/households/{householdId}/history/{historyId}
-  - date: Timestamp
-  - archivedAt: Timestamp
-  - meals: [                    // denormalized snapshot
-      {
-        mainName: string | null,
-        sideNames: string[],
-        dessertNames: string[]
-      }
-    ]
+create table planned_days (
+  id            uuid primary key default gen_random_uuid(),
+  household_id  uuid not null references households(id),
+  date          date not null,
+  unique (household_id, date)  -- one row per household per day
+);
 
-/mail/{mailId}                  // used by firestore-send-email extension
-  - to: string
-  - message: { subject, text, html }
+create table meal_groups (
+  id              uuid primary key default gen_random_uuid(),
+  planned_day_id  uuid not null references planned_days(id) on delete cascade,
+  sort_order      int not null default 0,       -- for reordering stacked meals
+  main_id         uuid references meal_library(id) on delete set null
+);
+
+create table meal_group_sides (
+  id              uuid primary key default gen_random_uuid(),
+  meal_group_id   uuid not null references meal_groups(id) on delete cascade,
+  meal_id         uuid not null references meal_library(id) on delete cascade,
+  sort_order      int not null default 0
+);
+
+create table meal_group_desserts (
+  id              uuid primary key default gen_random_uuid(),
+  meal_group_id   uuid not null references meal_groups(id) on delete cascade,
+  meal_id         uuid not null references meal_library(id) on delete cascade,
+  sort_order      int not null default 0
+);
+
+create table history (
+  id           uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id),
+  date         date not null,
+  archived_at  timestamptz not null default now(),
+  meals        jsonb not null  -- denormalized snapshot: [{mainName, sideNames[], dessertNames[]}]
+);
+
+create table pushed_off (
+  id            uuid primary key default gen_random_uuid(),
+  household_id  uuid not null references households(id),
+  meals         jsonb not null,  -- same shape as history.meals
+  pushed_at     timestamptz not null default now()
+);
+
+-- Row Level Security: all tables filtered by household_id
+-- Users can only access data for their own household
+alter table meal_library enable row level security;
+alter table planned_days enable row level security;
+alter table meal_groups enable row level security;
+alter table history enable row level security;
+-- (policies omitted for brevity — pattern: WHERE household_id = user's household_id)
 ```
 
 ### Key Design Decisions
 
-- **Denormalized names** in `plannedDays` and `history` — avoids extra reads on every grid render. Names sync on write (when a library item is renamed, a Cloud Function updates all future `plannedDays` references, but history is left unchanged).
-- **Date string as document ID** for `plannedDays` — enables direct lookup without queries.
-- **Household scoping** — all data is under a household, making future multi-family support a matter of creating additional household docs, not restructuring.
+- **Normalized relational model.** No denormalization needed — Postgres joins are fast. A single query with joins can fetch the full 14-day grid: `planned_days → meal_groups → meal_library` (+ sides/desserts). No client-side assembly required.
+- **History is denormalized (jsonb).** History snapshots are frozen in time — if a library item is renamed, history retains the original name. Using `jsonb` here avoids maintaining foreign key references to potentially deleted items.
+- **`(household_id, date)` unique constraint** on `planned_days` — enables direct lookup by date without scanning.
+- **Row Level Security (RLS)** — Supabase enforces that users can only read/write their own household's data at the database level. No application-layer auth checks needed for data isolation.
+- **Cascading deletes** — Deleting a `planned_day` automatically removes its `meal_groups`, sides, and desserts. Clean and safe.
+- **Concurrent edits** — Two users adding meal groups to the same day insert separate rows (no array mutation conflicts). Postgres handles this natively with row-level locking.
 
 ---
 
@@ -367,7 +409,7 @@ When dropping onto a day that already has meal(s):
 1. **Zero friction** — No popups during drag. No confirmations for moves. Stacking over replacing.
 2. **Visual-first** — Large tiles, minimal text, clear visual hierarchy. Readable at arm's length on iPad.
 3. **Forgiving** — Undo/redo support (Ctrl+Z / ⌘+Z, or undo button). Stacking prevents accidental overwrites. Nothing is permanently deleted in normal use.
-4. **Fast** — Optimistic UI updates (write to Firestore in background, update UI immediately). Target: <100ms perceived latency for any drag operation.
+4. **Fast** — Optimistic UI updates (write to Supabase in background, update UI immediately). Target: <100ms perceived latency for any drag operation.
 5. **Touch-native** — All interactions designed for finger input first. Generous tap targets (minimum 44×44px per Apple HIG). Long-press to drag. No hover-dependent features for core flows.
 
 ### Undo/Redo
@@ -401,8 +443,8 @@ When dropping onto a day that already has meal(s):
 - Left sidebar with 3 tabs + add/edit/delete items
 - Push timeline (forward and backward, 1–7 days)
 - Focus mode (tonight's view)
-- Firebase Auth (email/password)
-- Firestore realtime sync
+- Supabase Auth (email/password)
+- Supabase Realtime sync
 - Auto-logged history
 - Undo/redo (in-memory, last 20 actions)
 - Basic email reminder (daily, fixed 10 AM)
@@ -429,8 +471,8 @@ When dropping onto a day that already has meal(s):
 | 1 | Should stacked meals visually compress (accordion) or expand (vertical list)? | **Vertical list** — simpler, more readable. Compress only if 3 meals makes tiles too tall on iPad. Prototype both. | UI implementation |
 | 2 | Do we want a "favorites" tag on library items? | Defer to v1.1. Use frequency-based sorting instead (most-used items float to top). | Library UX |
 | 3 | Should the grid start from today or from the start of the current week? | **Start of current week** — more natural mental model. Past days in the week are dimmed. | Grid logic |
-| 4 | What happens if both users drag to the same day simultaneously? | Firestore's `arrayUnion` handles this — both meals stack. Last-write-wins for the array, but since we're appending, no data loss. | Data layer |
-| 5 | Should the "Pushed Off" holding area persist across sessions? | **Yes** — store as a separate Firestore document. Prevents silent data loss. | Data model |
+| 4 | What happens if both users drag to the same day simultaneously? | Each user inserts a separate `meal_groups` row — Postgres handles concurrent inserts natively with row-level locking. No data loss. | Data layer |
+| 5 | Should the "Pushed Off" holding area persist across sessions? | **Yes** — stored in the `pushed_off` table. Prevents silent data loss. | Data model |
 
 ---
 
